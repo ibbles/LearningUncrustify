@@ -4,7 +4,7 @@ import os
 import tkinter as tk
 from tkinter import ttk
 from tkinter import Listbox
-from difflib import ndiff
+from difflib import SequenceMatcher
 
 class DiffViewerApp:
     def __init__(self, master):
@@ -55,51 +55,24 @@ class DiffViewerApp:
         self.file2_text = tk.Text(self.right_frame, wrap=tk.NONE, width=40)
         self.file2_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=1)
 
-        # These mappings will be created anew in show_diff()
-        self.file1_to_file2 = []
-        self.file2_to_file1 = []
-
-        # Attach scroll events
-        self.file1_text.config(yscrollcommand=self.on_file1_yscroll)
-        self.file2_text.config(yscrollcommand=self.on_file2_yscroll)
-        self.diff_scrollbar.config(command=self.on_scrollbar)
-        self.bind_mousewheel(self.file1_text, self.sync_scroll_from1)
-        self.bind_mousewheel(self.file2_text, self.sync_scroll_from2)
-
-        # Prevent recursion during programmatic scroll
-        self.suppress_scroll_callback = False
+        # Attach scroll events (straightforward now)
+        self.file1_text.config(yscrollcommand=self.diff_scrollbar.set)
+        self.file2_text.config(yscrollcommand=self.diff_scrollbar.set)
+        self.diff_scrollbar.config(command=self.yview_all)
+        self.bind_mousewheel(self.file1_text, self.sync_scroll)
+        self.bind_mousewheel(self.file2_text, self.sync_scroll)
 
     def bind_mousewheel(self, widget, command):
         widget.bind('<MouseWheel>', command)
         widget.bind('<Button-4>', command)
         widget.bind('<Button-5>', command)
 
-    def on_file1_yscroll(self, *args):
-        self.diff_scrollbar.set(*args)
-        if not self.suppress_scroll_callback:
-            self.suppress_scroll_callback = True
-            self.align_file2_to_file1()
-            self.suppress_scroll_callback = False
-
-    def on_file2_yscroll(self, *args):
-        self.diff_scrollbar.set(*args)
-        if not self.suppress_scroll_callback:
-            self.suppress_scroll_callback = True
-            self.align_file1_to_file2()
-            self.suppress_scroll_callback = False
-
-    def on_scrollbar(self, *args):
-        # Pass scrollbar movement to file1_text, then let file1_text's handler sync file2
+    def yview_all(self, *args):
         self.file1_text.yview(*args)
+        self.file2_text.yview(*args)
 
-    def sync_scroll_from1(self, event):
-        return self.handle_mousewheel(event, source=1)
-
-    def sync_scroll_from2(self, event):
-        return self.handle_mousewheel(event, source=2)
-
-    def handle_mousewheel(self, event, source):
-        # Only handle vertical scrolling
+    def sync_scroll(self, event):
+        # Unified scroll event
         if event.delta:
             lines = -1 * int(event.delta / 120)
         elif event.num == 4:
@@ -108,26 +81,9 @@ class DiffViewerApp:
             lines = 1
         else:
             lines = 0
-        widget = self.file1_text if source == 1 else self.file2_text
-        widget.yview_scroll(lines, "units")
-        # After scroll (calls yscroll callback), suppress default behavior
+        self.file1_text.yview_scroll(lines, "units")
+        self.file2_text.yview_scroll(lines, "units")
         return "break"
-
-    def align_file2_to_file1(self):
-        # Find topmost visible line in file1_text, map it to file2_text
-        index1 = int(self.file1_text.index("@0,0").split('.')[0]) - 1  # zero-based
-        if 0 <= index1 < len(self.file1_to_file2):
-            target_index2 = self.file1_to_file2[index1]
-            if target_index2 is not None:
-                self.file2_text.yview_moveto(target_index2 / max(1, len(self.file2_to_file1)))
-        # fallback: else, do nothing
-
-    def align_file1_to_file2(self):
-        index2 = int(self.file2_text.index("@0,0").split('.')[0]) - 1  # zero-based
-        if 0 <= index2 < len(self.file2_to_file1):
-            target_index1 = self.file2_to_file1[index2]
-            if target_index1 is not None:
-                self.file1_text.yview_moveto(target_index1 / max(1, len(self.file1_to_file2)))
 
     def populate_tree_view(self):
         source_dir = 'source'
@@ -171,35 +127,59 @@ class DiffViewerApp:
         with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
             file1_lines = file1.readlines()
             file2_lines = file2.readlines()
-        diff = list(ndiff(file1_lines, file2_lines))
+        
+        # Compute grouped opcodes using SequenceMatcher
+        sm = SequenceMatcher(None, file1_lines, file2_lines)
+        opcodes = sm.get_opcodes()
+        
         self.file1_text.delete('1.0', tk.END)
         self.file2_text.delete('1.0', tk.END)
-        file1_line_num = 1
-        file2_line_num = 1
-        # Mapping from file1 text line-number (0-based) -> file2 text line-number (or None)
-        file1_to_file2 = []
-        # Mapping from file2 text line-number (0-based) -> file1 text line-number (or None)
-        file2_to_file1 = []
-        for line in diff:
-            if line.startswith('  '):
-                self.file1_text.insert(f'{file1_line_num}.0', line[2:])
-                self.file2_text.insert(f'{file2_line_num}.0', line[2:])
-                file1_to_file2.append(file2_line_num-1)
-                file2_to_file1.append(file1_line_num-1)
-                file1_line_num += 1
-                file2_line_num += 1
-            elif line.startswith('- '):
-                self.file1_text.insert(f'{file1_line_num}.0', line[2:], 'deleted')
-                file1_to_file2.append(None)
-                file1_line_num += 1
-            elif line.startswith('+ '):
-                self.file2_text.insert(f'{file2_line_num}.0', line[2:], 'added')
-                file2_to_file1.append(None)
-                file2_line_num += 1
+        line_num1 = 1
+        line_num2 = 1
+        
+        # Create tags
         self.file1_text.tag_config('deleted', background='lightcoral')
         self.file2_text.tag_config('added', background='lightgreen')
-        self.file1_to_file2 = file1_to_file2
-        self.file2_to_file1 = file2_to_file1
+        self.file1_text.tag_config('pad', background='#d3d3d3')  # gray
+        self.file2_text.tag_config('pad', background='#d3d3d3')  # gray
+
+        for tag, i1, i2, j1, j2 in opcodes:
+            n1 = i2 - i1
+            n2 = j2 - j1
+            maxlen = max(n1, n2)
+            # Helper: Return empty line with a newline if at least one of the chunks isn't empty
+            def gray_line():
+                return '\n'
+
+            for idx in range(maxlen):
+                l1 = file1_lines[i1+idx] if idx < n1 else None
+                l2 = file2_lines[j1+idx] if idx < n2 else None
+                if tag == 'equal':
+                    self.file1_text.insert(f'{line_num1}.0', l1)
+                    self.file2_text.insert(f'{line_num2}.0', l2)
+                elif tag == 'replace':
+                    if l1 is not None:
+                        self.file1_text.insert(f'{line_num1}.0', l1, ('deleted',))
+                    else:
+                        self.file1_text.insert(f'{line_num1}.0', gray_line(), ('pad',))
+                    if l2 is not None:
+                        self.file2_text.insert(f'{line_num2}.0', l2, ('added',))
+                    else:
+                        self.file2_text.insert(f'{line_num2}.0', gray_line(), ('pad',))
+                elif tag == 'delete':
+                    if l1 is not None:
+                        self.file1_text.insert(f'{line_num1}.0', l1, ('deleted',))
+                    self.file2_text.insert(f'{line_num2}.0', gray_line(), ('pad',))
+                elif tag == 'insert':
+                    self.file1_text.insert(f'{line_num1}.0', gray_line(), ('pad',))
+                    if l2 is not None:
+                        self.file2_text.insert(f'{line_num2}.0', l2, ('added',))
+                # Advance line numbers if line was actually added in either field
+                if l1 is not None or tag == 'insert' or tag == 'replace':
+                    line_num1 += 1
+                if l2 is not None or tag == 'delete' or tag == 'replace':
+                    line_num2 += 1
+
 
 def main():
     root = tk.Tk()
