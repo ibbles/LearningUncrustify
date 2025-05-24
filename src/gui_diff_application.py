@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import os
 import tkinter as tk
 from tkinter import ttk
 from difflib import ndiff
@@ -19,6 +22,12 @@ class DiffViewerApp:
         self.tree_view = ttk.Treeview(self.left_frame)
         self.tree_view.pack(fill=tk.BOTH, expand=1)
 
+        # Bind the tree view selection event to a callback
+        self.tree_view.bind('<<TreeviewSelect>>', self.on_tree_select)
+
+        # Populate the tree view
+        self.populate_tree_view()
+
         # Create right frame for diff view
         self.right_frame = ttk.Frame(self.paned_window, width=800, height=400, relief=tk.SUNKEN)
         self.paned_window.add(self.right_frame, weight=4)
@@ -29,6 +38,35 @@ class DiffViewerApp:
 
         self.file2_text = tk.Text(self.right_frame, wrap=tk.NONE, width=40)
         self.file2_text.pack(side=tk.RIGHT, fill=tk.BOTH, expand=1)
+
+    def populate_tree_view(self):
+        """
+        Populates the tree view with the structure of .cfg files found in the 'source' directory.
+        """
+        source_dir = 'source'
+
+        for root, dirs, files in os.walk(source_dir):
+            if root == source_dir:
+                # Add top-level directories to the tree view
+                for directory in dirs:
+                    dir_path = os.path.join(root, directory)
+                    self.tree_view.insert('', 'end', dir_path, text=directory)
+            else:
+                # Add files to their respective directory
+                parent_dir = os.path.basename(root)
+                parent_id = os.path.join(os.path.dirname(root), parent_dir)
+                for file in files:
+                    if file.endswith('.cfg'):
+                        file_path = os.path.join(root, file)
+                        self.tree_view.insert(parent_id, 'end', file_path, text=file)
+
+    def on_tree_select(self, event):
+        """Callback for when a tree node is selected."""
+        selected_item = self.tree_view.selection()
+        if selected_item:
+            # Assuming a single selection mode
+            file_path = selected_item[0]
+            print(f"Selected file: {file_path}")
 
     def show_diff(self, file1_path: str, file2_path: str):
         """Shows the diff between two specified files with side-by-side view and highlights."""
