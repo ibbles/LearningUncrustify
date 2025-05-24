@@ -77,6 +77,20 @@ class DiffViewerApp:
             file_path = selected_item[0]
             print(f"Selected file: {file_path}")
 
+            # Get the directory of the selected .cfg file
+            directory = os.path.dirname(file_path)
+
+            # Clear the current list view
+            self.list_view.delete(0, tk.END)
+
+            # List all .cpp files in the same directory
+            if os.path.isdir(directory):
+                cpp_files = [f for f in os.listdir(directory) if f.endswith('.cpp')]
+
+                # Populate the list view with .cpp files
+                for cpp_file in cpp_files:
+                    self.list_view.insert(tk.END, cpp_file)
+
     def show_diff(self, file1_path: str, file2_path: str):
         """Shows the diff between two specified files with side-by-side view and highlights."""
 
