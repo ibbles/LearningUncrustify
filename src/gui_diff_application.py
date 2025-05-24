@@ -37,6 +37,9 @@ class DiffViewerApp:
         self.list_view = Listbox(self.list_frame)
         self.list_view.pack(fill=tk.BOTH, expand=1)
 
+        # Bind the list view selection event to a callback
+        self.list_view.bind('<<ListboxSelect>>', self.on_list_select)
+
         # Create right frame for diff view
         self.right_frame = ttk.Frame(self.paned_window, width=800, height=400, relief=tk.SUNKEN)
         self.paned_window.add(self.right_frame, weight=2)
@@ -90,6 +93,23 @@ class DiffViewerApp:
                 # Populate the list view with .cpp files
                 for cpp_file in cpp_files:
                     self.list_view.insert(tk.END, cpp_file)
+
+    def on_list_select(self, event):
+        """Callback for when a .cpp file is selected in the list view."""
+        selected_index = self.list_view.curselection()
+        if selected_index:
+            cpp_file = self.list_view.get(selected_index)
+            cfg_file_path = self.tree_view.selection()[0]  # Get the selected .cfg file path
+            directory = os.path.dirname(cfg_file_path)
+            cfg_file = os.path.basename(cfg_file_path)
+            # Remove 'source/' from the directory
+            directory = directory.removeprefix('source/')
+            # Construct the two file paths
+            file1_path = f'source/{directory}/{cpp_file}'
+            file2_path = f'formatted/{directory}/{cpp_file[:-4]}+{cfg_file[:-4]}.cpp'
+            # Show the diff between constructed file paths
+            #self.show_diff(file1_path, file2_path)
+            print(f"Show diff:\n{file1_path}\n{file2_path}")
 
     def show_diff(self, file1_path: str, file2_path: str):
         """Shows the diff between two specified files with side-by-side view and highlights."""
