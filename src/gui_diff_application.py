@@ -53,7 +53,7 @@ class DiffViewerApp:
 
     def populate_tree_view(self):
         """
-        Populates the tree view with the structure of .cfg files found in the 'source' directory.
+        Populates the tree view with the structure of .cpp files found in the 'source' directory.
         """
         source_dir = 'source'
 
@@ -68,7 +68,7 @@ class DiffViewerApp:
                 parent_dir = os.path.basename(root)
                 parent_id = os.path.join(os.path.dirname(root), parent_dir)
                 for file in files:
-                    if file.endswith('.cfg'):
+                    if file.endswith('.cpp'):
                         file_path = os.path.join(root, file)
                         self.tree_view.insert(parent_id, 'end', file_path, text=file)
 
@@ -80,28 +80,28 @@ class DiffViewerApp:
             file_path = selected_item[0]
             print(f"Selected file: {file_path}")
 
-            # Get the directory of the selected .cfg file
+            # Get the directory of the selected .cpp file
             directory = os.path.dirname(file_path)
 
             # Clear the current list view
             self.list_view.delete(0, tk.END)
 
-            # List all .cpp files in the same directory
+            # List all .cfg files in the same directory
             if os.path.isdir(directory):
-                cpp_files = [f for f in os.listdir(directory) if f.endswith('.cpp')]
+                cfg_files = [f for f in os.listdir(directory) if f.endswith('.cfg')]
 
-                # Populate the list view with .cpp files
-                for cpp_file in cpp_files:
-                    self.list_view.insert(tk.END, cpp_file)
+                # Populate the list view with .cfg files
+                for cfg_file in cfg_files:
+                    self.list_view.insert(tk.END, cfg_file)
 
     def on_list_select(self, event):
-        """Callback for when a .cpp file is selected in the list view."""
+        """Callback for when a .cfg file is selected in the list view."""
         selected_index = self.list_view.curselection()
         if selected_index:
-            cpp_file = self.list_view.get(selected_index)
-            cfg_file_path = self.tree_view.selection()[0]  # Get the selected .cfg file path
-            directory = os.path.dirname(cfg_file_path)
-            cfg_file = os.path.basename(cfg_file_path)
+            cfg_file = self.list_view.get(selected_index)
+            cpp_file_path = self.tree_view.selection()[0]  # Get the selected .cpp file path
+            directory = os.path.dirname(cpp_file_path)
+            cpp_file = os.path.basename(cpp_file_path)
             # Remove 'source/' from the directory
             directory = directory.removeprefix('source/')
             # Construct the two file paths
