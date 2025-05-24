@@ -3,6 +3,7 @@
 import os
 import tkinter as tk
 from tkinter import ttk
+from tkinter import Listbox
 from difflib import ndiff
 
 class DiffViewerApp:
@@ -11,11 +12,11 @@ class DiffViewerApp:
         self.master.title("Diff Viewer Application")
 
         # Create a PanedWindow
-        self.paned_window = ttk.PanedWindow(self.master, orient=tk.HORIZONTAL)
+        self.paned_window = ttk.PanedWindow(self.master, orient=tk.VERTICAL)  # Change to VERTICAL
         self.paned_window.pack(fill=tk.BOTH, expand=1)
 
-        # Create left frame for tree view
-        self.left_frame = ttk.Frame(self.paned_window, width=200, height=400, relief=tk.SUNKEN)
+        # Left Frame for Tree View
+        self.left_frame = ttk.Frame(self.paned_window, width=200, height=200, relief=tk.SUNKEN)
         self.paned_window.add(self.left_frame, weight=1)
 
         # Create tree view in the left frame
@@ -28,9 +29,17 @@ class DiffViewerApp:
         # Populate the tree view
         self.populate_tree_view()
 
+        # New Frame for List View
+        self.list_frame = ttk.Frame(self.paned_window, width=200, height=200, relief=tk.SUNKEN)
+        self.paned_window.add(self.list_frame, weight=1)
+
+        # Create list view in the list frame
+        self.list_view = Listbox(self.list_frame)
+        self.list_view.pack(fill=tk.BOTH, expand=1)
+
         # Create right frame for diff view
         self.right_frame = ttk.Frame(self.paned_window, width=800, height=400, relief=tk.SUNKEN)
-        self.paned_window.add(self.right_frame, weight=4)
+        self.paned_window.add(self.right_frame, weight=2)
 
         # Create text widgets for side-by-side file view
         self.file1_text = tk.Text(self.right_frame, wrap=tk.NONE, width=40)
