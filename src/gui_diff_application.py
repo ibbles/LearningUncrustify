@@ -108,8 +108,7 @@ class DiffViewerApp:
             file1_path = f'source/{directory}/{cpp_file}'
             file2_path = f'formatted/{directory}/{cpp_file[:-4]}+{cfg_file[:-4]}.cpp'
             # Show the diff between constructed file paths
-            #self.show_diff(file1_path, file2_path)
-            print(f"Show diff:\n{file1_path}\n{file2_path}")
+            self.show_diff(file1_path, file2_path)
 
     def show_diff(self, file1_path: str, file2_path: str):
         """Shows the diff between two specified files with side-by-side view and highlights."""
@@ -149,7 +148,6 @@ class DiffViewerApp:
 def main():
     root = tk.Tk()
     app = DiffViewerApp(root)
-    app.show_diff('source/nl_enum_brace/nl_enum_brace.cpp', 'formatted/nl_enum_brace/nl_enum_brace+nl_enum_brace_force.cpp')
     root.mainloop()
 
 
