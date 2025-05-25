@@ -118,6 +118,75 @@ class DiffViewerApp:
             file2_path = f'formatted/{directory}/{cpp_file[:-4]}+{cfg_file[:-4]}.cpp'
             self.show_diff(file1_path, file2_path)
 
+    def split_chunks_at_equal_lines(self, opcodes, a, b):
+        result = []
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag in ("replace", "delete", "insert"):
+                ai, bi = i1, j1
+                while ai < i2 or bi < j2:
+                    # Check if both lines exist and are equal and non-empty
+                    if ai < i2 and bi < j2 and a[ai] == b[bi] and a[ai].strip() != "":
+                        # Emit previous chunk if any
+                        if ai > i1 or bi > j1:
+                            result.append((tag, i1, ai, j1, bi))
+                        # Emit equal chunk for this line
+                        result.append(("equal", ai, ai+1, bi, bi+1))
+                        ai += 1
+                        bi += 1
+                        i1 = ai
+                        j1 = bi
+                    else:
+                        if tag != "delete" and bi < j2:
+                            bi += 1
+                        if tag != "insert" and ai < i2:
+                            ai += 1
+                # Emit any trailing chunk that didn't end with an equal
+                if (tag == "replace" and (i1 != i2 or j1 != j2)) or \
+                   (tag == "delete" and i1 != i2) or \
+                   (tag == "insert" and j1 != j2):
+                    result.append((tag, i1, i2, j1, j2))
+            else:
+                result.append((tag, i1, i2, j1, j2))
+        return result
+
+    def rematch_change_equal_change(self, opcodes, a, b, min_chunk=3):
+        # Matches runs like [change][equal][change], where change is delete/insert/replace
+        # and equal is a small chunk
+        change_tags = {'delete', 'replace', 'insert'}
+        new_opcodes = []
+        i = 0
+        while i < len(opcodes):
+            if (
+                i+2 < len(opcodes)
+                and opcodes[i][0] in change_tags
+                and opcodes[i+1][0] == 'equal'
+                and opcodes[i+2][0] in change_tags
+            ):
+                # Require at least one side to have enough lines for finer matching
+                tag1, i1_1, i2_1, j1_1, j2_1 = opcodes[i]
+                _, i1_e, i2_e, j1_e, j2_e = opcodes[i+1]
+                tag2, i1_2, i2_2, j1_2, j2_2 = opcodes[i+2]
+
+                left_lines = a[i1_1:i2_1] if tag1 in {'delete', 'replace'} else []
+                right_lines = b[j1_2:j2_2] if tag2 in {'insert', 'replace'} else []
+                # Only attempt if deletion/replace and insert/replace chunks large, and the equal region is small
+                if ((len(left_lines) >= min_chunk or len(right_lines) >= min_chunk)
+                    and (i2_e - i1_e) <= min_chunk and (j2_e - j1_e) <= min_chunk):
+                    sm2 = SequenceMatcher(None, left_lines, right_lines)
+                    sub_opcodes = sm2.get_opcodes()
+                    # Map sub_opcodes back to original indices
+                    for tag, li1, li2, rj1, rj2 in sub_opcodes:
+                        new_opcodes.append(
+                            (tag,
+                             i1_1 + li1, i1_1 + li2,
+                             j1_2 + rj1, j1_2 + rj2)
+                        )
+                    i += 3
+                    continue
+            new_opcodes.append(opcodes[i])
+            i += 1
+        return new_opcodes
+
     def show_diff(self, file1_path: str, file2_path: str):
         with open(file1_path, 'r') as file1, open(file2_path, 'r') as file2:
             file1_lines = file1.readlines()
@@ -126,6 +195,11 @@ class DiffViewerApp:
         # Compute grouped opcodes using SequenceMatcher
         sm = SequenceMatcher(None, file1_lines, file2_lines)
         opcodes = sm.get_opcodes()
+
+        # Post-process to split chunks at equal non-empty lines within changes
+        opcodes = self.split_chunks_at_equal_lines(opcodes, file1_lines, file2_lines)
+        # Generalized: further re-match [change][equal][change] runs
+        opcodes = self.rematch_change_equal_change(opcodes, file1_lines, file2_lines)
 
         self.left_text.delete('1.0', tk.END)
         self.right_text.delete('1.0', tk.END)
