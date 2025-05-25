@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import Listbox
 from difflib import SequenceMatcher
+import tkinter.font as tkFont
 
 class DiffViewerApp:
     """Main class for the GUI application.
@@ -15,6 +16,11 @@ class DiffViewerApp:
     def __init__(self, master):
         self.master = master
         self.master.title("Diff Viewer Application")
+
+        # Set a larger font for the Treeview to increase row height
+        tree_font = tkFont.Font(family="TkDefaultFont", size=14)
+        style = ttk.Style(self.master)
+        style.configure("Treeview", font=tree_font, rowheight=28, padding=4)
 
         # Root windows that contains the .cpp files tree view, the .cfg files
         # list view, and the diff view.
