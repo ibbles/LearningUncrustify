@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import itertools
 import os
 import subprocess
@@ -47,7 +48,7 @@ def get_files(directory):
     return cpp_files, cfg_files
 
 
-def process_files(source, formatted):
+def process_files(uncrustify_binary, source, formatted):
     cpp_files, cfg_files = get_files(source)
     for cpp_file, cfg_file in itertools.product(cpp_files, cfg_files):
         cpp_name = cpp_file[:-4]
@@ -56,14 +57,13 @@ def process_files(source, formatted):
         cpp_path = os.path.join(source, cpp_file)
         cfg_path = os.path.join(source, cfg_file)
         output_path = os.path.join(formatted, output_name)
-        command = ["uncrustify", "-c", cfg_path, "-f", cpp_path, "-o", output_path]
+        command = [uncrustify_binary, "-q", "-c", cfg_path, "-f", cpp_path, "-o", output_path]
         if True:
             try:
                 subprocess.run(command, check=True)
             except subprocess.CalledProcessError as e:
                 print(f"An error occurred while processing {cpp_file}: {e}")
         else:
-            #print(f'Formatting {cpp_path} with {cfg_path} to {output_path}')
             print(" ".join(command))
 
 
@@ -73,15 +73,19 @@ def get_directories(source):
     return directories
 
 
-def main():
+def main(uncrustify_binary):
     source_root = "source"
     formatted_root = "formatted"
     directories = get_directories(source_root)
     for directory in directories:
         source = os.path.join(source_root, directory)
         formatted = os.path.join(formatted_root, directory)
-        process_files(source, formatted)
+        process_files(uncrustify_binary, source, formatted)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Format .cpp files using Uncrustify.")
+    parser.add_argument("--binary", type=str, default="uncrustify", help="Uncrustify binary.")
+    args = parser.parse_args()
+    uncrustify_binary = args.binary
+    main(uncrustify_binary)
