@@ -78,7 +78,7 @@ class DiffViewerApp:
         source_dir = 'source'
         for root, dirs, files in os.walk(source_dir):
             if root == source_dir:
-                for directory in dirs:
+                for directory in sorted(dirs):
                     dir_path = os.path.join(root, directory)
                     self.tree_view.insert('', 'end', dir_path, text=directory)
             else:
