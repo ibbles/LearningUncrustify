@@ -66,5 +66,14 @@ void work(MyClass& myClass)
 void work(MyClass& myClass)
 {
 	myClass.performRecursiveParticipantProcessing(myClass.m_firstParticipant,
-												  myClass.m_secondParticipant);
+	                                              myClass.m_secondParticipant);
+}
+
+
+/*
+        Function call that doesn't need any line brakes.
+ */
+void work(MyClass& myClass)
+{
+	myClass.performProcessing(firstParticipant, secondParticipant);
 }
