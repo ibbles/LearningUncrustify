@@ -196,10 +196,12 @@ class DiffViewerApp:
         sm = SequenceMatcher(None, file1_lines, file2_lines)
         opcodes = sm.get_opcodes()
 
+
+        # Commenting out chunk post-processing, it doesn't work reliably.
         # Post-process to split chunks at equal non-empty lines within changes
-        opcodes = self.split_chunks_at_equal_lines(opcodes, file1_lines, file2_lines)
+        # opcodes = self.split_chunks_at_equal_lines(opcodes, file1_lines, file2_lines)
         # Generalized: further re-match [change][equal][change] runs
-        opcodes = self.rematch_change_equal_change(opcodes, file1_lines, file2_lines)
+        # opcodes = self.rematch_change_equal_change(opcodes, file1_lines, file2_lines)
 
         self.left_text.delete('1.0', tk.END)
         self.right_text.delete('1.0', tk.END)
