@@ -5,7 +5,7 @@
 
 void work(MyClass& myClass)
 {
-	myClass.performRecursiveParticipantProcessing(myClass.m_firstParticipant, myClass.m_secondParticipant);
+	myClass.performRecursiveParticipantProcessing(myClass.m_firstParticipant, myClass.m_secondParticipant, myClass.weight * myClass.scale + myClass.offset);
 }
 
 
@@ -16,7 +16,7 @@ void work(MyClass& myClass)
 void work(MyClass& myClass)
 {
 	myClass.performRecursiveParticipantProcessing(myClass.m_firstParticipant,
-		myClass.m_secondParticipant);
+		myClass.m_secondParticipant, myClass.weight * myClass.scale + myClass.offset);
 }
 
 
@@ -28,7 +28,7 @@ void work(MyClass& myClass)
 void work(MyClass& myClass)
 {
 	myClass.performRecursiveParticipantProcessing(
-		myClass.m_firstParticipant, myClass.m_secondParticipant);
+		myClass.m_firstParticipant, myClass.m_secondParticipant, myClass.weight * myClass.scale + myClass.offset);
 }
 
 
@@ -39,5 +39,6 @@ void work(MyClass& myClass)
 void work(MyClass& myClass)
 {
 	myClass.performRecursiveParticipantProcessing(myClass.m_firstParticipant,
-												  myClass.m_secondParticipant);
+	                                              myClass.m_secondParticipant,
+	                                              myClass.weight * myClass.scale + myClass.offset);
 }
