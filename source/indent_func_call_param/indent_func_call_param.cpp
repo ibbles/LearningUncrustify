@@ -1,31 +1,4 @@
 
-class MyClass;
-
-namespace MyClassHelpers
-{
-struct MyClassParticipant
-{
-	MyClassParticipant(MyClass& participant);
-	MyClass& m_participant;
-};
-}
-
-class MyClass
-{
-public:
-MyClass(MyClass& firstChild, MyClass& secondChild);
-MyClass(MyClassHelpers::MyClassParticipant firstChild, MyClassHelpers::MyClassParticipant secondChild);
-
-void performRecursiveParticipantProcessing(MyClass& firstParticipant, MyClass& secondParticipant);
-void performRecursiveParticipantProcessing(MyClassHelpers::MyClassParticipant& firstChild, MyClassHelpers::MyClassParticipant& secondChild);
-
-public:
-MyClassHelpers::MyClassParticipant m_firstParticipant;
-MyClassHelpers::MyClassParticipant m_secondParticipant;
-};
-
-
-
 /*
         Very long lines.
  */
